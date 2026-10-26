@@ -1,0 +1,8 @@
+delivery_location_id,name,locality_id,address,location_type
+1,Casa 1,29,"Praça de Sousa, 633",home
+2,Restaurante 2,33,"Rua do Monte Cativo, 95",restaurant
+3,Restaurante 3,28,"Av Denis Nascimento, 952",restaurant
+4,Loja 4,15,"Travessa de Sá, 68",store
+5,Restaurante 5,45,"Avenida Panorâmica, S/N",restaurant
+6,Loja 6,29,"R. Mateus Martins, 1",store
+7,Casa 7,34,"Largo Professor Gonçalves Ferreira, 92",home

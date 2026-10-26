@@ -1,0 +1,10 @@
+location_id,location_type,ref_id,name,municipality,latitude,longitude
+1,producer,1,Hortas Valente,Fafe,41.474322,-8.174295
+2,producer,2,Campos Leite,Vieira do Minho,41.633412,-8.125896
+3,producer,3,Horta Morais,Terras de Bouro,41.716185,-8.340221
+4,collection_center,1,Centro de Recolha 1,Braga,41.531493,-8.446483
+5,delivery_location,1,Loja 1,Guimaraes,41.464457,-8.29774
+6,delivery_location,2,Casa 2,Esposende,41.553679,-8.778977
+7,delivery_location,3,Casa 3,Guimaraes,41.418772,-8.289729
+8,delivery_location,4,Casa 4,Vila Nova de Famalicao,41.394239,-8.52032
+9,delivery_location,5,Loja 5,Guimaraes,41.418772,-8.289729

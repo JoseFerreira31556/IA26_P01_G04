@@ -1,0 +1,6 @@
+delivery_location_id,name,locality_id,address,location_type
+1,Loja 1,12,"R. Carvalho, 9",store
+2,Casa 2,19,"Largo de Pinto, 64",home
+3,Casa 3,11,"Avenida de Gaspar, 8",home
+4,Casa 4,17,"Largo Andrade, 71",home
+5,Loja 5,11,"Largo Francisco Ramos, 26",store

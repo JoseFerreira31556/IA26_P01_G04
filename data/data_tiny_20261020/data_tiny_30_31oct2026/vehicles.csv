@@ -1,0 +1,3 @@
+vehicle_id,plate,center_id,capacity_kg,refrigerated,avg_speed_kmh
+1,ZG-06-DP,1,150.0,1,45.0
+2,TY-74-YA,1,200.0,0,45.0

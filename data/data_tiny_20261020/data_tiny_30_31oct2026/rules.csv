@@ -1,0 +1,11 @@
+rule,value,description
+start_date,2026-10-30,first day of the planning horizon
+horizon_days,2,number of days
+flow,producer>warehouse>delivery_location,every product goes through the warehouse
+stop_service_min,10,service time at each pickup / delivery stop
+warehouse_handling_min,15,time to unload (and to load) a vehicle at the warehouse
+max_warehouse_dwell_h,24,max time a product stays in the warehouse (arrival -> start of loading)
+window_semantics,service_start,windows constrain when the service STARTS
+avg_speed_kmh,45.0,used to build duration_min
+route_factor,1.3,used to build distance_km
+generator_seed,1,seed that produced this dataset

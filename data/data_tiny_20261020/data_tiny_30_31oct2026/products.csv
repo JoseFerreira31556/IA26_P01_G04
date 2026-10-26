@@ -1,0 +1,16 @@
+product_id,producer_id,name,category,unit,unit_weight_kg
+1,1,Pimento,vegetable,kg,1.0
+2,1,Kiwi,fruit,kg,1.0
+3,1,Cereja,fruit,kg,1.0
+4,1,Pera,fruit,kg,1.0
+5,1,Batata,vegetable,kg,1.0
+6,1,Castanha,fruit,kg,1.0
+7,2,Laranja,fruit,kg,1.0
+8,2,Mel,other,unit,0.5
+9,2,Batata,vegetable,kg,1.0
+10,2,Curgete,vegetable,kg,1.0
+11,2,Ovos,other,crate,1.8
+12,3,Curgete,vegetable,kg,1.0
+13,3,Castanha,fruit,kg,1.0
+14,3,Grelos,vegetable,kg,0.8
+15,3,Cebola,vegetable,kg,1.0

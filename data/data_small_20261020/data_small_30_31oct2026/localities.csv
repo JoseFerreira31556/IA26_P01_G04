@@ -1,0 +1,50 @@
+locality_id,name,municipality,district,latitude,longitude
+1,Se,Braga,Braga,41.533518,-8.405528
+2,Maximinos,Braga,Braga,41.564989,-8.435147
+3,Real,Braga,Braga,41.551572,-8.425425
+4,Nogueiro,Braga,Braga,41.55938,-8.408464
+5,Dume,Braga,Braga,41.531493,-8.446483
+6,Barcelos,Barcelos,Braga,41.555588,-8.618462
+7,Barcelinhos,Barcelos,Braga,41.551914,-8.639995
+8,Abade de Neiva,Barcelos,Braga,41.536069,-8.604023
+9,Arcozelo,Barcelos,Braga,41.525238,-8.592836
+10,Oliveira do Castelo,Guimaraes,Braga,41.462571,-8.315271
+11,Creixomil,Guimaraes,Braga,41.418772,-8.289729
+12,Pevidem,Guimaraes,Braga,41.464457,-8.29774
+13,Ronfe,Guimaraes,Braga,41.42833,-8.295694
+14,Famalicao,Vila Nova de Famalicao,Braga,41.384752,-8.532215
+15,Ribeirao,Vila Nova de Famalicao,Braga,41.405194,-8.518509
+16,Joane,Vila Nova de Famalicao,Braga,41.394954,-8.531757
+17,Riba de Ave,Vila Nova de Famalicao,Braga,41.394239,-8.52032
+18,Esposende,Esposende,Braga,41.526289,-8.805726
+19,Fao,Esposende,Braga,41.553679,-8.778977
+20,Apulia,Esposende,Braga,41.543915,-8.797505
+21,Marinhas,Esposende,Braga,41.561427,-8.763803
+22,Fafe,Fafe,Braga,41.433544,-8.178765
+23,Aroes,Fafe,Braga,41.463574,-8.15984
+24,Golaes,Fafe,Braga,41.474322,-8.174295
+25,Vizela,Vizela,Braga,41.399802,-8.274785
+26,Caldas de Vizela,Vizela,Braga,41.373468,-8.278921
+27,Amares,Amares,Braga,41.653024,-8.33689
+28,Rendufe,Amares,Braga,41.634164,-8.34975
+29,Ferreiros,Amares,Braga,41.610626,-8.367063
+30,Vila Verde,Vila Verde,Braga,41.66367,-8.439984
+31,Prado,Vila Verde,Braga,41.63245,-8.43326
+32,Ponte,Vila Verde,Braga,41.658952,-8.426976
+33,Povoa de Lanhoso,Povoa de Lanhoso,Braga,41.577035,-8.269752
+34,Calvos,Povoa de Lanhoso,Braga,41.583721,-8.252778
+35,Louredo,Povoa de Lanhoso,Braga,41.584347,-8.272037
+36,Terras de Bouro,Terras de Bouro,Braga,41.716185,-8.340221
+37,Geres,Terras de Bouro,Braga,41.693874,-8.306531
+38,Campo do Geres,Terras de Bouro,Braga,41.740859,-8.312041
+39,Vieira do Minho,Vieira do Minho,Braga,41.62798,-8.166483
+40,Rossas,Vieira do Minho,Braga,41.633412,-8.125896
+41,Anisso,Vieira do Minho,Braga,41.646826,-8.148019
+42,Celorico de Basto,Celorico de Basto,Braga,41.401314,-7.996691
+43,Arnoia,Celorico de Basto,Braga,41.383989,-7.960677
+44,Cabeceiras de Basto,Cabeceiras de Basto,Braga,41.52059,-7.968743
+45,Refojos de Basto,Cabeceiras de Basto,Braga,41.505164,-7.9643
+46,Povoa de Varzim,Povoa de Varzim,Porto,41.406156,-8.791415
+47,Aver-o-Mar,Povoa de Varzim,Porto,41.397483,-8.750676
+48,Argivai,Povoa de Varzim,Porto,41.402609,-8.754675
+49,Laundos,Povoa de Varzim,Porto,41.398757,-8.765766
