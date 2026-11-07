@@ -190,3 +190,84 @@ if __name__ == "__main__":
     print("Locations:", len(problem.locations))
     print("Distances:", len(problem.distanceMatrix))
     print("Rules:", len(problem.rules))
+
+
+def verificar_rota(dados, veiculo, rota, inicio, armazem=None):
+    
+    itens = dados["itens"]
+
+    if armazem is None:
+        armazem = {}
+
+    capacidade, posicao = dados["veiculos"][veiculo]
+    hora = pd.Timestamp(inicio)
+    erros = []
+    recolhidos = []  # a bordo, vindos do produtor (ainda têm de ir ao armazém)
+    carregados = []  # a bordo, vindos do armazém (prontos a entregar)
+
+    paragem = 0
+    for local, lista in rota:
+        paragem += 1
+
+        # Viagem até à paragem (se o veículo ficar no mesmo sítio, não há viagem)
+        if local != posicao:
+            hora += dados["viagem"][(posicao, local)]
+        posicao = local
+        tipo = dados["tipo"][local]
+
+        if tipo == "collection_center":
+            # Descarregar tudo o que veio dos produtores
+            if len(recolhidos) > 0:
+                for i in recolhidos:
+                    armazem[i] = hora
+                recolhidos = []
+                hora += dados["manuseio"]
+
+            # Carregar os itens indicados
+            if len(lista) > 0:
+                for i in lista:
+                    if i not in armazem:
+                        erros.append(f"Paragem {paragem}: o item {i} não está no armazém")
+                    else:
+                        chegada = armazem.pop(i)
+                        if hora - chegada > dados["max_armazem"]:
+                            erros.append(f"Paragem {paragem}: o item {i} ficou mais de 24 h no armazém")
+                        carregados.append(i)
+                hora += dados["manuseio"]
+
+        else:
+            # Se o veículo chegou antes de a janela abrir, espera
+            for i in lista:
+                local_item, abre, fecha = itens[i][tipo]
+                if hora < abre:
+                    hora = abre
+
+            for i in lista:
+                local_item, abre, fecha = itens[i][tipo]
+                if local_item != local:
+                    erros.append(f"Paragem {paragem}: o item {i} não é deste local")
+                if hora > fecha:
+                    erros.append(f"Paragem {paragem}: o item {i} chega fora da janela")
+
+            if tipo == "producer":
+                for i in lista:
+                    recolhidos.append(i)
+            else:
+                for i in lista:
+                    if i in carregados:
+                        carregados.remove(i)
+                    else:
+                        erros.append(f"Paragem {paragem}: o item {i} não foi carregado no armazém")
+            hora += dados["servico"]
+
+        # Capacidade: o peso de tudo o que vai no veículo
+        peso = 0
+        for i in recolhidos + carregados:
+            peso += itens[i]["peso"]
+        if peso > capacidade:
+            erros.append(f"Paragem {paragem}: {peso:.1f} kg a bordo, mais do que os {capacidade:.0f} kg do veículo")
+
+    if len(recolhidos) > 0 or len(carregados) > 0:
+        erros.append(f"A rota acaba com itens no veículo: {recolhidos + carregados}")
+
+    return erros
