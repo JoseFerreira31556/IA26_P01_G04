@@ -59,9 +59,16 @@ class Problem:
         self.locations = locations
         self.distanceMatrix = distanceMatrix
         self.rules = rules
+        self.distances = {}
 
+        for _, row in distanceMatrix.iterrows():
+            self.distances[(row["origin_location_id"], row["destination_location_id"])] = row["distance_km"]
 
-
+    def distance(self, origin, destination):
+        if(origin == destination ):
+            return 0
+        else:
+            return self.distances[(origin, destination)]
 
 # Load data from CSV files
 def read_csv_files(path, files_list):
@@ -172,7 +179,144 @@ def loadProblem(data):
 
     return problem
 
+#Calculation of one route
+def routeCost(problem, route):  
+    totalKm = 0
 
+    for pos in range(len(route) - 1):
+        currentPos = route[pos]
+        nextPos = route[pos + 1] 
+
+        totalKm  += problem.distance(currentPos, nextPos)    
+    
+    return totalKm
+
+#Calculation of both vehicles routes
+def solutionCost(problem, routes):
+    allVehiclesKm = 0
+    
+    for route in routes:
+        allVehiclesKm += routeCost(problem, route)        
+
+    return allVehiclesKm
+
+def checkRoute(checkData, vehicle, route, start, warehouse=None):
+    # Checks if a route is feasible and returns the list of errors found (empty list = feasible route)
+    # route = list of pairs (stop, list of items), e.g. [(1, [1]), (4, [1]), (7, [1]), (4, [])]
+ 
+    items = checkData["items"]
+ 
+    # Items currently stored in the warehouse: item -> time of arrival at the warehouse
+    if warehouse is None:
+        warehouse = {}
+ 
+    capacity, position = checkData["vehicles"][vehicle]
+    time = pd.Timestamp(start)
+    errors = []
+    pickedUp = []  # on board, coming from the producer (still have to go to the warehouse)
+    loaded = []    # on board, coming from the warehouse (ready to be delivered)
+ 
+    stopNumber = 0
+    for stop, itemList in route:
+        stopNumber += 1
+ 
+        # Travel to the stop (if the vehicle stays in the same place, there is no travel)
+        if stop != position:
+            time += checkData["travel"][(position, stop)]
+        position = stop
+        stopType = checkData["type"][stop]
+ 
+        if stopType == "collection_center":
+            # Unload everything that came from the producers
+            if len(pickedUp) > 0:
+                for i in pickedUp:
+                    warehouse[i] = time
+                pickedUp = []
+                time += checkData["handling"]
+ 
+            # Load the indicated items
+            if len(itemList) > 0:
+                for i in itemList:
+                    if i not in warehouse:
+                        errors.append(f"Stop {stopNumber}: item {i} is not in the warehouse")
+                    else:
+                        arrival = warehouse.pop(i)
+                        if time - arrival > checkData["max_warehouse"]:
+                            errors.append(f"Stop {stopNumber}: item {i} stayed more than 24 h in the warehouse")
+                        loaded.append(i)
+                time += checkData["handling"]
+ 
+        else:
+            # If the vehicle arrived before the window opens, it waits
+            for i in itemList:
+                itemStop, opens, closes = items[i][stopType]
+                if time < opens:
+                    time = opens
+ 
+            for i in itemList:
+                itemStop, opens, closes = items[i][stopType]
+                if itemStop != stop:
+                    errors.append(f"Stop {stopNumber}: item {i} does not belong to this stop")
+                if time > closes:
+                    errors.append(f"Stop {stopNumber}: item {i} arrives outside the time window")
+ 
+            if stopType == "producer":
+                for i in itemList:
+                    pickedUp.append(i)
+            else:
+                for i in itemList:
+                    if i in loaded:
+                        loaded.remove(i)
+                    else:
+                        errors.append(f"Stop {stopNumber}: item {i} was not loaded at the warehouse")
+            time += checkData["service"]
+ 
+        # Capacity: the weight of everything on board
+        load = 0
+        for i in pickedUp + loaded:
+            load += items[i]["weight"]
+        if load > capacity:
+            errors.append(f"Stop {stopNumber}: {load:.1f} kg on board, more than the {capacity:.0f} kg of the vehicle")
+ 
+    if len(pickedUp) > 0 or len(loaded) > 0:
+        errors.append(f"The route ends with items in the vehicle: {pickedUp + loaded}")
+ 
+    return errors
+
+def buildCheckData(problem):
+    # Converts the Problem into the dictionary used by checkRoute
+    checkData = {}
+ 
+    # Type of each stop: location_id -> location_type
+    checkData["type"] = {}
+    for _, row in problem.locations.iterrows():
+        checkData["type"][row["location_id"]] = row["location_type"]
+ 
+    # Travel time between two stops: (origin, destination) -> duration
+    checkData["travel"] = {}
+    for _, row in problem.distanceMatrix.iterrows():
+        checkData["travel"][(row["origin_location_id"], row["destination_location_id"])] = pd.Timedelta(minutes=row["duration_min"])
+ 
+    # Fixed times from the rules
+    checkData["service"] = pd.Timedelta(minutes=problem.rules["stop_service_min"])
+    checkData["handling"] = pd.Timedelta(minutes=problem.rules["warehouse_handling_min"])
+    checkData["max_warehouse"] = pd.Timedelta(hours=problem.rules["max_warehouse_dwell_h"])
+ 
+    # Vehicles: vehicle_id -> (capacity, stop of the warehouse)
+    checkData["vehicles"] = {}
+    for vehicle in problem.vehicles:
+        checkData["vehicles"][vehicle.vehicleId] = (vehicle.capacityKg, vehicle.depotStopId)
+ 
+    # Items: order_item_id -> pickup stop and window, delivery stop and window, weight
+    checkData["items"] = {}
+    for request in problem.requests:
+        checkData["items"][request.orderItemId] = {
+            "producer": (request.pickupStopId, pd.Timestamp(request.availabilityStart), pd.Timestamp(request.availabilityEnd)),
+            "delivery_location": (request.deliveryStopId, pd.Timestamp(request.deliveryStart), pd.Timestamp(request.deliveryEnd)),
+            "weight": request.weightKg
+        }
+ 
+    return checkData
 
 # Run the program
 if __name__ == "__main__":
@@ -183,6 +327,7 @@ if __name__ == "__main__":
 
     # Create the Problem object
     problem = loadProblem(data)
+    # distanceCalc = problem.distance(1,4)
 
     # Display loaded data
     print("Vehicles:", len(problem.vehicles))
@@ -190,84 +335,7 @@ if __name__ == "__main__":
     print("Locations:", len(problem.locations))
     print("Distances:", len(problem.distanceMatrix))
     print("Rules:", len(problem.rules))
+    # print(distanceCalc)
 
 
-def verificar_rota(dados, veiculo, rota, inicio, armazem=None):
-    
-    itens = dados["itens"]
 
-    if armazem is None:
-        armazem = {}
-
-    capacidade, posicao = dados["veiculos"][veiculo]
-    hora = pd.Timestamp(inicio)
-    erros = []
-    recolhidos = []  # a bordo, vindos do produtor (ainda têm de ir ao armazém)
-    carregados = []  # a bordo, vindos do armazém (prontos a entregar)
-
-    paragem = 0
-    for local, lista in rota:
-        paragem += 1
-
-        # Viagem até à paragem (se o veículo ficar no mesmo sítio, não há viagem)
-        if local != posicao:
-            hora += dados["viagem"][(posicao, local)]
-        posicao = local
-        tipo = dados["tipo"][local]
-
-        if tipo == "collection_center":
-            # Descarregar tudo o que veio dos produtores
-            if len(recolhidos) > 0:
-                for i in recolhidos:
-                    armazem[i] = hora
-                recolhidos = []
-                hora += dados["manuseio"]
-
-            # Carregar os itens indicados
-            if len(lista) > 0:
-                for i in lista:
-                    if i not in armazem:
-                        erros.append(f"Paragem {paragem}: o item {i} não está no armazém")
-                    else:
-                        chegada = armazem.pop(i)
-                        if hora - chegada > dados["max_armazem"]:
-                            erros.append(f"Paragem {paragem}: o item {i} ficou mais de 24 h no armazém")
-                        carregados.append(i)
-                hora += dados["manuseio"]
-
-        else:
-            # Se o veículo chegou antes de a janela abrir, espera
-            for i in lista:
-                local_item, abre, fecha = itens[i][tipo]
-                if hora < abre:
-                    hora = abre
-
-            for i in lista:
-                local_item, abre, fecha = itens[i][tipo]
-                if local_item != local:
-                    erros.append(f"Paragem {paragem}: o item {i} não é deste local")
-                if hora > fecha:
-                    erros.append(f"Paragem {paragem}: o item {i} chega fora da janela")
-
-            if tipo == "producer":
-                for i in lista:
-                    recolhidos.append(i)
-            else:
-                for i in lista:
-                    if i in carregados:
-                        carregados.remove(i)
-                    else:
-                        erros.append(f"Paragem {paragem}: o item {i} não foi carregado no armazém")
-            hora += dados["servico"]
-
-        # Capacidade: o peso de tudo o que vai no veículo
-        peso = 0
-        for i in recolhidos + carregados:
-            peso += itens[i]["peso"]
-        if peso > capacidade:
-            erros.append(f"Paragem {paragem}: {peso:.1f} kg a bordo, mais do que os {capacidade:.0f} kg do veículo")
-
-    if len(recolhidos) > 0 or len(carregados) > 0:
-        erros.append(f"A rota acaba com itens no veículo: {recolhidos + carregados}")
-
-    return erros
