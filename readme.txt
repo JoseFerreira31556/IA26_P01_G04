@@ -48,8 +48,7 @@ Este projeto foi desenvolvido com o apoio de uma ferramenta de IA generativa
 (Claude, da Anthropic). A ferramenta foi usada para:
   - orientar a análise exploratória dos dados, com explicações e pistas;
   - gerar partes do código, em particular os algoritmos do notebook 02
-    (adaptados dos notebooks das aulas), o verificador de rotas e a tradutora
-    do model.py;
+    (adaptados dos notebooks das aulas) e a tradutora do model.py;
   - rever o código e a documentação, e identificar incongruências entre ficheiros.
 
 Todo o código foi revisto, executado e testado pelo grupo, que assume a
