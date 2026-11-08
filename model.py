@@ -3,7 +3,7 @@ import os
 
 class Request:
     # Represents a product transport request
-    def __init__(self, orderItemId, orderId, productId, producerId, deliveryLocationId, quantity, weightKg, availabilityStart, availabilityEnd, deliveryStart, deliveryEnd):
+    def __init__(self, orderItemId, orderId, productId, producerId, deliveryLocationId, quantity, weightKg, availabilityStart, availabilityEnd, deliveryStart, deliveryEnd, pickupStopId, deliveryStopId):
 
         self.orderItemId = orderItemId
         self.orderId = orderId
@@ -21,10 +21,13 @@ class Request:
         self.deliveryStart = deliveryStart
         self.deliveryEnd = deliveryEnd
 
+        self.pickupStopId = pickupStopId
+        self.deliveryStopId = deliveryStopId
+
 
 class Vehicle:
     # Represents a vehicle available for transporting products
-    def __init__(self, vehicleId, plate, centerId, capacityKg, refrigerated, avgSpeedKmh):
+    def __init__(self, vehicleId, plate, centerId, capacityKg, refrigerated, avgSpeedKmh, depotStopId):
 
         self.vehicleId = vehicleId
         self.plate = plate
@@ -32,11 +35,15 @@ class Vehicle:
         self.capacityKg = capacityKg
         self.refrigerated = refrigerated
         self.avgSpeedKmh = avgSpeedKmh
+        self.depotStopId = depotStopId
+
 
 
 class State:
     # Represents the current state of a vehicle during route planning
-    def __init__(self, vehicleId, locationId, currentTime, currentLoad, pendingRequests, pickedRequests, warehouseRequests, deliveredRequests):
+    def __init__(self, vehicleId, locationId, currentTime, currentLoad,
+                 pendingRequests, pickedRequests, warehouseRequests,
+                 deliveredRequests):
 
         self.vehicleId = vehicleId
         self.locationId = locationId
@@ -48,6 +55,36 @@ class State:
         self.pickedRequests = frozenset(pickedRequests)
         self.warehouseRequests = frozenset(warehouseRequests)
         self.deliveredRequests = frozenset(deliveredRequests)
+
+    def __eq__(self, other):
+        # Compares two states by their attributes
+        if not isinstance(other, State):
+            return NotImplemented
+
+        return (
+            self.vehicleId == other.vehicleId
+            and self.locationId == other.locationId
+            and self.currentTime == other.currentTime
+            and self.currentLoad == other.currentLoad
+            and self.pendingRequests == other.pendingRequests
+            and self.pickedRequests == other.pickedRequests
+            and self.warehouseRequests == other.warehouseRequests
+            and self.deliveredRequests == other.deliveredRequests
+        )
+
+    def __hash__(self):
+        # Creates a hash based on the state attributes
+        return hash((
+            self.vehicleId,
+            self.locationId,
+            self.currentTime,
+            self.currentLoad,
+            self.pendingRequests,
+            self.pickedRequests,
+            self.warehouseRequests,
+            self.deliveredRequests
+        ))
+
 
 
 class Problem:
@@ -70,7 +107,8 @@ class Problem:
         else:
             return self.distances[(origin, destination)]
 
-# Load data from CSV files
+
+
 def read_csv_files(path, files_list):
     # Reads CSV files and stores them in a dictionary of DataFrames
 
@@ -80,16 +118,37 @@ def read_csv_files(path, files_list):
         if not file.endswith(".csv"):
             continue
 
-        # Read the CSV file into a pandas DataFrame
+        # Read the CSV file
         rf = pd.read_csv(os.path.join(path, file))
 
+        # Convert date and time columns
+        for column in rf.columns:
+            if column.endswith(("_start", "_end", "_datetime")):
+                rf[column] = pd.to_datetime(rf[column])
+
+        # Store the DataFrame
         name = file.replace(".csv", "")
         data[name] = rf
 
     return data
 
 
-def loadVehicles(df):
+
+
+def loadStopIds(df):
+    # Maps each entity to its physical location
+
+    stopIds = {}
+
+    for _, row in df.iterrows():
+        key = (row["location_type"], int(row["ref_id"]))
+        stopIds[key] = int(row["location_id"])
+
+    return stopIds
+
+
+
+def loadVehicles(df, stopIds):
     # Creates Vehicle objects from a DataFrame
 
     vehicles = []
@@ -101,7 +160,8 @@ def loadVehicles(df):
             centerId=int(row["center_id"]),
             capacityKg=float(row["capacity_kg"]),
             refrigerated=bool(row["refrigerated"]),
-            avgSpeedKmh=float(row["avg_speed_kmh"])
+            avgSpeedKmh=float(row["avg_speed_kmh"]),
+            depotStopId=stopIds[("collection_center", int(row["center_id"]))]
         )
 
         vehicles.append(vehicle)
@@ -110,7 +170,7 @@ def loadVehicles(df):
 
 
 
-def loadRequests(data):
+def loadRequests(data, stopIds):
     # Creates Request objects by combining CSV data
 
     # Combine order items with their orders
@@ -147,7 +207,9 @@ def loadRequests(data):
             availabilityStart=row["availability_start"],
             availabilityEnd=row["availability_end"],
             deliveryStart=row["delivery_start"],
-            deliveryEnd=row["delivery_end"]
+            deliveryEnd=row["delivery_end"],
+            pickupStopId=stopIds[("producer", int(row["producer_id"]))],
+            deliveryStopId=stopIds[("delivery_location", int(row["delivery_location_id"]))]
         )
 
         requests.append(request)
@@ -156,17 +218,39 @@ def loadRequests(data):
 
 
 
+def loadRules(df):
+    # Converts rules DataFrame into a dictionary
+
+    rules = {}
+
+    for _, row in df.iterrows():
+        key = row["rule"]
+        value = row["value"]
+
+        try:
+            value = float(value)
+        except (ValueError, TypeError):
+            pass
+
+        rules[key] = value
+
+    return rules
+
+
+
 def loadProblem(data):
     # Creates a Problem object from the loaded CSV data
 
     # Create Vehicle and Request objects
-    vehicles = loadVehicles(data["vehicles"])
-    requests = loadRequests(data)
+    stopIds = loadStopIds(data["locations"])
+
+    vehicles = loadVehicles(data["vehicles"], stopIds)
+    requests = loadRequests(data, stopIds)
 
     # Get locations, distances and rules
     locations = data["locations"]
     distanceMatrix = data["distance_matrix"]
-    rules = data["rules"]
+    rules = loadRules(data["rules"])
 
     # Create the Problem object
     problem = Problem(
@@ -318,16 +402,17 @@ def buildCheckData(problem):
  
     return checkData
 
+
 # Run the program
 if __name__ == "__main__":
-     # Load CSV files
+
+    # Load CSV files
     path = "./data/data_tiny_20261020/"
     files_list = sorted(os.listdir(path))
     data = read_csv_files(path, files_list)
 
     # Create the Problem object
     problem = loadProblem(data)
-    # distanceCalc = problem.distance(1,4)
 
     # Display loaded data
     print("Vehicles:", len(problem.vehicles))
@@ -335,7 +420,3 @@ if __name__ == "__main__":
     print("Locations:", len(problem.locations))
     print("Distances:", len(problem.distanceMatrix))
     print("Rules:", len(problem.rules))
-    # print(distanceCalc)
-
-
-
