@@ -241,9 +241,10 @@ def loadRules(df):
 def loadProblem(data):
     # Creates a Problem object from the loaded CSV data
 
-    # Create Vehicle and Request objects
+    # Dictionary to find the stop (location_id) of each producer, warehouse and delivery location
     stopIds = loadStopIds(data["locations"])
 
+    # Create Vehicle and Request objects
     vehicles = loadVehicles(data["vehicles"], stopIds)
     requests = loadRequests(data, stopIds)
 
